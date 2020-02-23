@@ -40,6 +40,9 @@ let BorderCategory : UInt32 = 0x1 << 4
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
+    var level = 1
+    var extraBlocks = 3;
+    
     var isFingerOnPaddle = false
     lazy var gameState: GKStateMachine = GKStateMachine(states: [
     WaitingForTap(scene: self),
@@ -68,6 +71,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
+        extraBlocks*=level
+        
         // 1
         let numberOfBlocks = 8
         let blockWidth = SKSpriteNode(imageNamed: "block").size.width
@@ -75,20 +80,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // 2
         let xOffset = (frame.width - totalBlocksWidth) / 2
         // 3
-        for i in 0..<numberOfBlocks {
-          let block = SKSpriteNode(imageNamed: "block.png")
-          block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i) + 0.5) * blockWidth,
-            y: frame.height * 0.8)
-              
-          block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
-          block.physicsBody!.allowsRotation = false
-          block.physicsBody!.friction = 0.0
-          block.physicsBody!.affectedByGravity = false
-          block.physicsBody!.isDynamic = false
-          block.name = BlockCategoryName
-          block.physicsBody!.categoryBitMask = BlockCategory
-          block.zPosition = 2
-          addChild(block)
+        for j in 0..<level {
+            for i in 0..<numberOfBlocks {
+              let block = SKSpriteNode(imageNamed: "block.png")
+              block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i) + 0.5) * blockWidth,
+                                       y: frame.height * (0.8-CGFloat(j)/3))
+                  
+              block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
+              block.physicsBody!.allowsRotation = false
+              block.physicsBody!.friction = 0.0
+              block.physicsBody!.affectedByGravity = false
+              block.physicsBody!.isDynamic = false
+              block.name = BlockCategoryName
+              block.physicsBody!.categoryBitMask = BlockCategory
+              block.zPosition = 2
+              addChild(block)
+            }
         }
         
         // 1
@@ -150,6 +157,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
       particles.run(SKAction.sequence([SKAction.wait(forDuration: 1.0),
         SKAction.removeFromParent()]))
       node.removeFromParent()
+        
+        if(extraBlocks > 0){
+            extraBlocks-=1
+            let blockWidth = SKSpriteNode(imageNamed: "block").size.width
+            let blockHeight = SKSpriteNode(imageNamed: "block").size.height
+            let block = SKSpriteNode(imageNamed: "block.png")
+            block.position = CGPoint(x: randomFloat(from: blockWidth, to: frame.width-blockWidth),
+                                     y: randomFloat(from: blockHeight, to: frame.height-blockHeight))
+                
+            block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
+            block.physicsBody!.allowsRotation = false
+            block.physicsBody!.friction = 0.0
+            block.physicsBody!.affectedByGravity = false
+            block.physicsBody!.isDynamic = false
+            block.name = BlockCategoryName
+            block.physicsBody!.categoryBitMask = BlockCategory
+            block.zPosition = 2
+            addChild(block)
+        }
     }
     
     
@@ -226,6 +252,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
       case is GameOver:
           let newScene = GameScene(fileNamed:"GameScene")
+          if(gameWon){
+            if level < 4 {
+                newScene!.level = level+1
+            }else{
+                newScene!.level = 4
+            }
+          }
           newScene!.scaleMode = .aspectFit
           let reveal = SKTransition.flipHorizontal(withDuration: 0.5)
           self.view?.presentScene(newScene!, transition: reveal)
